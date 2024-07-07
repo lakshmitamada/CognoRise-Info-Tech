@@ -1,51 +1,34 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const todoForm = document.getElementById('todo-form');
-    const todoInput = document.getElementById('todo-input');
-    const todoList = document.getElementById('todo-list');
+    const convertBtn = document.getElementById('convertBtn');
+    const amountInput = document.getElementById('amount');
+    const fromCurrencySelect = document.getElementById('fromCurrency');
+    const toCurrencySelect = document.getElementById('toCurrency');
+    const resultDiv = document.getElementById('result');
 
-    // Load tasks from local storage
-    const tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    convertBtn.addEventListener('click', function() {
+        const amount = amountInput.value;
+        const fromCurrency = fromCurrencySelect.value;
+        const toCurrency = toCurrencySelect.value;
 
-    // Function to save tasks to local storage
-    const saveTasks = () => {
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-    };
-
-    // Function to render tasks
-    const renderTasks = () => {
-        todoList.innerHTML = '';
-        tasks.forEach((task, index) => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <span>${task}</span>
-                <button class="delete-button" data-index="${index}">Delete</button>
-            `;
-            todoList.appendChild(li);
-        });
-    };
-
-    // Initial render
-    renderTasks();
-
-    // Event listener for adding tasks
-    todoForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const taskText = todoInput.value.trim();
-        if (taskText !== '') {
-            tasks.push(taskText);
-            saveTasks();
-            renderTasks();
-            todoInput.value = '';
+        if (amount === '' || isNaN(amount)) {
+            alert('Please enter a valid amount');
+            return;
         }
-    });
 
-    // Event listener for deleting tasks
-    todoList.addEventListener('click', function(event) {
-        if (event.target.classList.contains('delete-button')) {
-            const index = event.target.getAttribute('data-index');
-            tasks.splice(index, 1);
-            saveTasks();
-            renderTasks();
-        }
+        fetch(`https://api.exchangeratesapi.io/latest?base=${fromCurrency}`)
+            .then(response => response.json())
+            .then(data => {
+                const rate = data.rates[toCurrency];
+                if (rate) {
+                    const convertedAmount = amount * rate;
+                    resultDiv.textContent = `${amount} ${fromCurrency} = ${convertedAmount.toFixed(2)} ${toCurrency}`;
+                } else {
+                    resultDiv.textContent = 'Conversion rate not available.';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching exchange rates:', error);
+                resultDiv.textContent = 'Failed to fetch exchange rates. Please try again later.';
+            });
     });
 });
